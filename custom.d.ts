@@ -1,0 +1,1 @@
+declare module 'flight-recorder-manufacturers/lookup'

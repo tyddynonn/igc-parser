@@ -1,4 +1,4 @@
-const lookupManufacturer = require('flight-recorder-manufacturers/lookup');
+import lookupManufacturer from 'flight-recorder-manufacturers/lookup'
 
 const ONE_HOUR = 60 * 60 * 1000;
 const ONE_DAY = 24 * 60 * 60 * 1000;
@@ -91,6 +91,7 @@ declare namespace IGCParser {
 
     /** Engine Noise Level from 0.0 to 1.0 */
     enl: number | null;
+    mop: number | null;
   }
 
   export interface KRecord {
@@ -455,6 +456,12 @@ class IGCParser {
 
       enl = parseInt(extensions['ENL'], 10) / enlMax;
     }
+    let mop = null;
+    if (extensions['MOP']) {
+      let mopLength = this.fixExtensions.filter(it => it.code === 'MOP')[0].length;
+      let mopMax = Math.pow(10, mopLength);
+      mop = parseInt(extensions['MOP'], 10) / mopMax;
+    }
 
     let fixAccuracy = extensions['FXA'] ? parseInt(extensions['FXA'], 10) : null;
 
@@ -468,6 +475,7 @@ class IGCParser {
       gpsAltitude,
       extensions,
       enl,
+      mop,
       fixAccuracy,
     };
   }

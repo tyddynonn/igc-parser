@@ -12,6 +12,7 @@
     "target": "ES5"
   },
   "files": [
-    "index.ts"
+    "index.ts",
+    "custom.d.ts"
   ]
 }
