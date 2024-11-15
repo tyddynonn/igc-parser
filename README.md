@@ -4,19 +4,19 @@ igc-parser
 [![Build Status](https://travis-ci.org/Turbo87/igc-parser.svg?branch=master)](https://travis-ci.org/Turbo87/igc-parser)
 
 IGC flight log parser
-
+This version forked from Turbo87's original includes parsing of LXNav Obeservation Zone records
 
 Install
 ------------------------------------------------------------------------------
 
 ```bash
-npm install --save igc-parser
+npm install --save igc-parser-cf
 ```
 
 or using [`yarn`](https://yarnpkg.com/):
 
 ```bash
-yarn add igc-parser
+yarn add igc-parser-cf
 ```
 
 

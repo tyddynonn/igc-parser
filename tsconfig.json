@@ -2,14 +2,14 @@
   "compilerOptions": {
     "alwaysStrict": true,
     "declaration": true,
-    "lib": ["ES6"],
-    "module": "commonjs",
-    "moduleResolution": "node",
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
     "newLine": "LF",
     "noEmitOnError": true,
     "sourceMap": true,
     "strict": true,
-    "target": "ES5"
+    "target": "ES2020",
   },
   "files": [
     "index.ts",

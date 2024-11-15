@@ -22,6 +22,8 @@ const RE_TASK = /^C(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2
 //const RE_TASKPOINT = /^C(\d{2})(\d{2})(\d{3})([NS])(\d{3})(\d{2})(\d{3})([EW])(.*)/;
 // see https://github.com/JuanIrache/igc-parser/commit/f698c15c912cf08ff98b7354216b63dab42d1a19
 const RE_TASKPOINT = /^C(\d{2})(\d{2})(\d{3,6})([NS])(\d{3})(\d{2})(\d{3,6})([EW])(.*)/;
+const RE_LXOZ = /^LLXVOZ/
+
 /* tslint:enable:max-line-length */
 
 export namespace IGCParserNS {
@@ -52,6 +54,7 @@ export namespace IGCParserNS {
 
         fixes: BRecord[];
         dataRecords: KRecord[];
+        ozRecords: OZRecord[];
 
         security: string | null;
 
@@ -105,6 +108,20 @@ export namespace IGCParserNS {
         extensions: RecordExtensions;
     }
 
+    export interface OZRecord {
+        index: number;
+        Style: number;
+        R1: number;
+        A1: number;
+        R2: number;
+        A2: number;
+        A12: number;
+        Line:boolean
+        Autonext: boolean;
+        Elev?: number;
+        Lat: number;
+        Lon: number;
+    }
     export interface RecordExtensions {
         [code: string]: string;
     }
@@ -136,7 +153,7 @@ export namespace IGCParserNS {
     }
 }
 
-export default class IGCParser {
+export class IGCParser {
     private _result: IGCParserNS.PartialIGCFile = {
         numFlight: null,
         pilot: null,
@@ -151,6 +168,7 @@ export default class IGCParser {
         task: null,
         fixes: [],
         dataRecords: [],
+        ozRecords:[],
         security: null,
         errors: [],
     };
@@ -213,6 +231,12 @@ export default class IGCParser {
             this.prevTimestamp = data.timestamp;
 
             this._result.dataRecords.push(data);
+
+        } else if (recordType === 'L') {
+            const data = this.parseLRecord(line);
+            if (data) {
+                this._result.ozRecords?.push(data)
+            }
 
         } else if (recordType === 'H') {
             this.processHeader(line);
@@ -527,6 +551,98 @@ export default class IGCParser {
         return extensions;
     }
 
+    private parseLRecord(line: string) {
+        const match = line.match(RE_LXOZ);
+        if (match) {
+            let oz:IGCParserNS.OZRecord = {
+                index: 0,
+                Style: 0,
+                R1: 0,
+                A1: 0,
+                R2: 0,
+                A2: 0,
+                A12: 0,
+                Line:false,
+                Autonext: false,
+                Lat: 0,
+                Lon: 0,
+
+            }
+            const parts = line.split(',')
+            parts.forEach(part=>{
+                const data=part.split('=');
+                switch (data[0]) {
+                    case 'LLXVOZ' : {
+                        oz.index=parseInt(data[1])
+                        break;
+                    }
+                    case 'Style' :{
+                        oz.Style = parseInt(data[1])
+                        break;
+                    }
+                    case 'R1' : {
+                        oz.R1 = parseInt(data[1].slice(0,-1))   // this assumes always in m
+                        break;
+                    }
+                    case 'R2' : {
+                        oz.R2 = parseInt(data[1].slice(0,-1))   // this assumes always in m
+                        break;
+                    }
+                    case 'R1' : {
+                        oz.R1 = parseInt(data[1].slice(0,-1))   // this assumes always in m
+                        break;
+                    }
+                    case 'A1' : {
+                        oz.A1 = parseFloat(data[1])
+                        break;
+                    }                
+                    case 'A2' : {
+                        oz.A2 = parseFloat(data[1])
+                        break;
+                    }                
+                    case 'A12' : {
+                        oz.A12 = parseFloat(data[1])
+                        break;
+                    }     
+                    case 'Line' :{
+                        oz.Line = data[1]==='1'
+                        break
+                    }
+                    case 'Autonext' :{
+                        oz.Autonext = data[1]==='1'
+                        break;
+                    }
+                    case 'Lat':{
+                        oz.Lat=IGCParser.parseLatitude(
+                            data[1].substring(0,2),
+                            data[1].substring(2,2),
+                            data[1].substring(5,3),
+                            data[1].slice(-1)
+                        )
+                        break;                    
+                    }
+                    case 'Lon' :{
+                        oz.Lon=IGCParser.parseLongitude(
+                            data[1].substring(0,3),
+                            data[1].substring(3,2),
+                            data[1].substring(6,3),
+                            data[1].slice(-1)
+                        )
+                        break;
+                    }
+                    case 'Elev':{
+                        oz.Elev = parseInt(data[1].slice(0,-1))   // this assumes always in m
+                        break;
+                    }
+                    default: {
+                        throw new Error(`Invalid ${line[0]} record at line ${this.lineNumber}: ${line}`);
+                    }
+                }
+            })
+            return oz        
+        }
+
+    }
     private static parseLatitude(dd: string, mm: string, mmm: string, ns: string): number {
         const degrees = parseInt(dd, 10) + parseFloat(`${mm}.${mmm}`) / 60;
         return (ns === 'S') ? -degrees : degrees;
