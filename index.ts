@@ -643,7 +643,6 @@ export class IGCParser {
             })
             return oz        
         }
-
     }
     private static parseLatitude(dd: string, mm: string, mmm: string, ns: string): number {
         const degrees = parseInt(dd, 10) + parseFloat(`${mm}.${mmm}`) / 60;
