@@ -1,6 +1,6 @@
 {
   "name": "igc-parser-cf",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "IGC flight log parser",
   "license": "MIT",
   "author": "Chris Fox, from original by Tobias Bieniek <tobias.bieniek@gmail.com>, ",

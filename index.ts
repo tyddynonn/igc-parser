@@ -635,7 +635,9 @@ export class IGCParser {
                         break;
                     }
                     default: {
-                        throw new Error(`Invalid ${line[0]} record at line ${this.lineNumber}: ${line}`);
+                        //throw new Error(`Invalid LLXVOZ record at line ${this.lineNumber}: ${line}`);
+                        //ignore unknown entries
+                        break;
                     }
                 }
             })
