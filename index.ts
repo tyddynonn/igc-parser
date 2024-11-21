@@ -23,6 +23,7 @@ const RE_TASK = /^C(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2
 // see https://github.com/JuanIrache/igc-parser/commit/f698c15c912cf08ff98b7354216b63dab42d1a19
 const RE_TASKPOINT = /^C(\d{2})(\d{2})(\d{3,6})([NS])(\d{3})(\d{2})(\d{3,6})([EW])(.*)/;
 const RE_LXOZ = /^LLXVOZ/
+const RE_LNAVOZN = /^LNAVOZN=(-?\d)/        // captures the index
 
 /* tslint:enable:max-line-length */
 
@@ -552,22 +553,22 @@ export class IGCParser {
     }
 
     private parseLRecord(line: string) {
+        let oz:IGCParserNS.OZRecord = {
+            index: 0,
+            Style: 0,
+            R1: 0,
+            A1: 0,
+            R2: 0,
+            A2: 0,
+            A12: 0,
+            Line:false,
+            Autonext: false,
+            Lat: 0,
+            Lon: 0,
+        }
         const match = line.match(RE_LXOZ);
         if (match) {
-            let oz:IGCParserNS.OZRecord = {
-                index: 0,
-                Style: 0,
-                R1: 0,
-                A1: 0,
-                R2: 0,
-                A2: 0,
-                A12: 0,
-                Line:false,
-                Autonext: false,
-                Lat: 0,
-                Lon: 0,
 
-            }
             const parts = line.split(',')
             parts.forEach(part=>{
                 const data=part.split('=');
@@ -581,15 +582,11 @@ export class IGCParser {
                         break;
                     }
                     case 'R1' : {
-                        oz.R1 = parseInt(data[1].slice(0,-1))   // this assumes always in m
+                        oz.R1 = IGCParser.parseDistance(data[1]) 
                         break;
                     }
                     case 'R2' : {
-                        oz.R2 = parseInt(data[1].slice(0,-1))   // this assumes always in m
-                        break;
-                    }
-                    case 'R1' : {
-                        oz.R1 = parseInt(data[1].slice(0,-1))   // this assumes always in m
+                        oz.R2 = IGCParser.parseDistance(data[1]) 
                         break;
                     }
                     case 'A1' : {
@@ -643,7 +640,96 @@ export class IGCParser {
             })
             return oz        
         }
+        // now try the Oudie version..
+        const match2 = line.match(RE_LNAVOZN)
+        if (match2) {   // index will be in Group 1
+            const index = parseInt(match2[1])
+            console.log(`LNAVOZN: line ${line} has match `, match2 )
+
+            // have we already got this index?
+            let oz1 = this._result.ozRecords?.find(r=>r.index===index)
+            oz1 = oz1 ? oz1 : oz        // make a new one if necessary
+            oz1.index = index;
+
+            const parts = line.split(',')
+            parts.forEach(part=>{
+                const data=part.split('=');
+                switch (data[0]) {
+                    case 'Style' :{
+                        oz1.Style = parseInt(data[1])
+                        break;
+                    }
+                    case 'R1' : {                        
+                        oz1.R1 = IGCParser.parseDistance(data[1])   
+                        break;
+                    }
+                    case 'R2' : {
+                        oz1.R2 = IGCParser.parseDistance(data[1])    // this assumes always in m
+                        break;
+                    }
+                    case 'A1' : {
+                        oz1.A1 = parseFloat(data[1])
+                        break;
+                    }                
+                    case 'A2' : {
+                        oz1.A2 = parseFloat(data[1])
+                        break;
+                    }                
+                    case 'A12' : {
+                        oz1.A12 = parseFloat(data[1])
+                        break;
+                    }     
+                    case 'Line' :{
+                        oz1.Line = data[1]==='1'
+                        break
+                    }
+                    case 'Autonext' :{
+                        oz1.Autonext = data[1]==='1'
+                        break;
+                    }
+                    case 'Lat':{
+                        oz1.Lat=IGCParser.parseLatitude(
+                            data[1].substring(0,2),
+                            data[1].substring(2,2),
+                            data[1].substring(5,3),
+                            data[1].slice(-1)
+                        )
+                        break;                    
+                    }
+                    case 'Lon' :{
+                        oz1.Lon=IGCParser.parseLongitude(
+                            data[1].substring(0,3),
+                            data[1].substring(3,2),
+                            data[1].substring(6,3),
+                            data[1].slice(-1)
+                        )
+                        break;
+                    }
+                    case 'Elev':{
+                        oz1.Elev = parseInt(data[1].slice(0,-1))   // this assumes always in m
+                        break;
+                    }
+                    default: {
+                        //throw new Error(`Invalid LNAVOZN record at line ${this.lineNumber}: ${line}`);
+                        //ignore unknown entries
+                        break;
+                    }
+                }
+            })
+            //console.log(`LNAVOZN returns `, oz1)
+            return oz1
+        }
+
     }
+
+    private static parseDistance(dist:string):number {
+        //console.log(`parseDistance from ${dist}, km is ${dist.substring(dist.length-2)==='km'}, value is ${dist.slice(0,-2)}`)
+        return dist.substring(dist.length-2)==='km' ?
+            parseFloat(dist.slice(0,-2)) * 1000 // convert to m
+            :
+            parseFloat(dist.slice(0,-1))
+        }
+    
     private static parseLatitude(dd: string, mm: string, mmm: string, ns: string): number {
         const degrees = parseInt(dd, 10) + parseFloat(`${mm}.${mmm}`) / 60;
         return (ns === 'S') ? -degrees : degrees;
