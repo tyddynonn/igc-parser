@@ -644,7 +644,7 @@ export class IGCParser {
         const match2 = line.match(RE_LNAVOZN)
         if (match2) {   // index will be in Group 1
             const index = parseInt(match2[1])
-            console.log(`LNAVOZN: line ${line} has match `, match2 )
+            //console.log(`LNAVOZN: line ${line} has match `, match2 )
 
             // have we already got this index?
             let oz1 = this._result.ozRecords?.find(r=>r.index===index)
